@@ -4,10 +4,10 @@ import { extname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-const projectRoot = fileURLToPath(new URL('../', import.meta.url));
+const projectRoot = fileURLToPath(new URL('./', import.meta.url));
 const { values } = parseArgs({
   options: {
-    dir: { type: 'string', default: 'website' },
+    dir: { type: 'string', default: '.' },
     host: { type: 'string', default: '127.0.0.1' },
     port: { type: 'string', default: '5173' },
   },
