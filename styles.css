@@ -962,6 +962,50 @@ h1 {
   min-width: 0
 }
 
+.protocol-example-tabs {
+  display: flex;
+  gap: 22px;
+  padding-inline: 15px;
+  border-bottom: 1px solid #29292e
+}
+
+.protocol-example-tabs button {
+  padding: 14px 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #96929f;
+  font: 10px var(--mono);
+  cursor: pointer
+}
+
+.protocol-example-tabs button[aria-selected="true"] {
+  color: #ff8ca1;
+  border-bottom-color: #ed5363
+}
+
+.protocol-example-tabs button:hover {
+  color: #f4e7ed
+}
+
+.protocol-example-caption {
+  padding: 12px 15px;
+  border-bottom: 1px solid #29292e;
+  color: #a0a0a9;
+  font-size: 10px;
+  line-height: 1.6
+}
+
+.protocol-code pre {
+  min-height: 350px;
+  max-height: 440px;
+  overflow: auto
+}
+
+#protocol-language {
+  font-weight: 400
+}
+
 .code-toolbar {
   height: 43px;
   border-bottom: 1px solid #29292e;

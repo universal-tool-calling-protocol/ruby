@@ -121,8 +121,37 @@ function initializeTabs(tablist) {
   });
 }
 
+let selectedProtocol = protocols[0];
+let selectedProtocolExample = 'manual';
+
+function selectProtocolExample(view) {
+  const examples = {
+    manual: { code: selectedProtocol.manual, filename: selectedProtocol.id + '.manual.json', language: 'JSON', caption: 'Define the tool, its parameters, and its native endpoint.' },
+    ruby: { code: selectedProtocol.code, filename: selectedProtocol.id + '.rb', language: 'Ruby', caption: 'Save the manual, then use call_tool or the call_tool_streaming enumerator.' },
+    codemode: { code: selectedProtocol.codeMode, filename: selectedProtocol.id + '.codemode.rb', language: 'Ruby', caption: 'Save the manual, then use call_tool or collect an array with call_tool_stream.' },
+  };
+  selectedProtocolExample = Object.hasOwn(examples, view) ? view : 'manual';
+  const example = examples[selectedProtocolExample];
+  queryAll('[data-protocol-example]').forEach((tab) => {
+    const selected = tab.dataset.protocolExample === selectedProtocolExample;
+    tab.setAttribute('aria-selected', String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  query('#protocol-example-panel').setAttribute('aria-labelledby', 'example-' + selectedProtocolExample);
+  query('#protocol-example-caption').textContent = example.caption;
+  query('#protocol-filename').textContent = example.filename;
+  query('#protocol-code').innerHTML = highlight(example.code);
+  query('#copy-protocol').dataset.copy = example.code;
+  query('#copy-protocol').setAttribute('aria-label', 'Copy ' + example.filename);
+  query('#protocol-language').textContent = example.language;
+  const pre = query('#protocol-example-panel pre');
+  pre.scrollTop = 0;
+  pre.scrollLeft = 0;
+}
+
 function selectProtocol(id) {
   const protocol = protocols.find((item) => item.id === id) || protocols[0];
+  selectedProtocol = protocol;
   queryAll('.protocol-tab').forEach((tab) => {
     const selected = tab.dataset.protocol === protocol.id;
     tab.setAttribute('aria-selected', String(selected));
@@ -133,9 +162,7 @@ function selectProtocol(id) {
   query('#protocol-title').textContent = protocol.title;
   query('#protocol-description').textContent = protocol.description;
   query('#protocol-tags').innerHTML = protocol.tags.map((tag) => '<span>' + escapeHTML(tag) + '</span>').join('');
-  query('#protocol-filename').textContent = protocol.id + '.rb';
-  query('#protocol-code').innerHTML = highlight(protocol.code);
-  query('#copy-protocol').dataset.copy = protocol.code;
+  selectProtocolExample(selectedProtocolExample);
   query('#protocol-note').textContent = protocol.note;
   query('#protocol-docs').href = './docs.html?topic=transports#transport-' + protocol.id;
 }
@@ -172,6 +199,9 @@ function initializeHome() {
   tabs.addEventListener('click', (event) => {
     const tab = event.target.closest('[data-protocol]');
     if (tab) selectProtocol(tab.dataset.protocol);
+  });
+  queryAll('[data-protocol-example]').forEach((tab) => {
+    tab.addEventListener('click', () => selectProtocolExample(tab.dataset.protocolExample));
   });
   selectProtocol(new URLSearchParams(location.search).get('protocol') || 'http');
   queryAll('[data-protocol-link]').forEach((button) => {
@@ -210,7 +240,7 @@ function renderDocBlock(block) {
   if (block.type === 'callout') return '<aside class="doc-callout"><strong>' + escapeHTML(block.title) + '</strong>' + block.text + '</aside>';
   if (block.type === 'list') return '<ul class="doc-list">' + block.items.map((item) => '<li>' + item + '</li>').join('') + '</ul>';
   if (block.type === 'transports') return '<div class="doc-transports">' + protocols.map((protocol) =>
-    '<section class="doc-transport" id="transport-' + protocol.id + '"><h3>' + icon(protocol.icon) + escapeHTML(protocol.name) + '</h3><p>' + escapeHTML(protocol.description) + '</p><small>' + escapeHTML(protocol.note) + '</small><a href="./?protocol=' + protocol.id + '#protocols">View Ruby example ↗</a></section>'
+    '<section class="doc-transport" id="transport-' + protocol.id + '"><h3>' + icon(protocol.icon) + escapeHTML(protocol.name) + '</h3><p>' + escapeHTML(protocol.description) + '</p><small>' + escapeHTML(protocol.note) + '</small><a href="./?protocol=' + protocol.id + '#protocols">View manual &amp; calls ↗</a></section>'
   ).join('') + '</div>';
   return '';
 }

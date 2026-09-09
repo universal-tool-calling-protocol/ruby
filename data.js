@@ -20,20 +20,60 @@ export const quickstart = [
   'client.close',
 ].join('\n');
 
-const clientExample = (name, type, fields, call = 'puts client.list_tools.map(&:name)') => [
-  'require "utcp"',
-  '',
-  'client = UTCP::Client.create(config: {',
-  '  manual_call_templates: [{',
-  '    name: "' + name + '",',
-  '    call_template_type: "' + type + '",',
-  ...fields.map((field, index) => '    ' + field + (index < fields.length - 1 ? ',' : '')),
-  '  }]',
-  '})',
-  '',
-  call,
-  'client.close',
-].join('\n');
+const transportExample = ({ type, name, tool, description, properties, args, template, streaming = false }) => {
+  const manual = JSON.stringify({
+    utcp_version: '1.1.0',
+    manual_version: '1.0.0',
+    tools: [{
+      name: tool,
+      description,
+      inputs: { type: 'object', properties, required: Object.keys(properties) },
+      tool_call_template: { call_template_type: type, ...template },
+    }],
+  }, null, 2);
+  const filename = type + '.manual.json';
+  const setup = (clientClass) => [
+    'require "utcp"',
+    '',
+    '# Save the Manual example as ' + filename,
+    'client = UTCP::' + clientClass + '.create(config: {',
+    '  manual_call_templates: [{',
+    '    name: "' + name + '",',
+    '    call_template_type: "' + (type === 'text' ? 'text' : 'file') + '",',
+    type === 'text'
+      ? '    content: File.read("' + filename + '"),'
+      : '    file_path: "' + filename + '",',
+    '    allowed_communication_protocols: ["' + type + '"]',
+    '  }]',
+    '})',
+    '',
+    'begin',
+  ];
+  const argumentsList = ['"' + name + '.' + tool + '"', ...Object.entries(args).map(([key, value]) => key + ': ' + JSON.stringify(value))];
+  const callArguments = (indent) => argumentsList.map((argument, index) => indent + argument + (index < argumentsList.length - 1 ? ',' : ''));
+  const cleanup = ['ensure', '  client.close', 'end'];
+  return {
+    manual,
+    code: [
+      ...setup('Client'),
+      '  ' + (streaming ? 'client.call_tool_streaming(' : 'result = client.call_tool('),
+      ...callArguments('    '),
+      streaming ? '  ).each do |item|' : '  )',
+      ...(streaming ? ['    puts item.inspect', '  end'] : ['  puts result.inspect']),
+      ...cleanup,
+    ].join('\n'),
+    codeMode: [
+      ...setup('CodeModeUtcpClient'),
+      '  execution = client.call_tool_chain(<<~\'RUBY\', timeout: 10)',
+      '    codemode.' + (streaming ? 'call_tool_stream(' : 'call_tool('),
+      ...callArguments('      '),
+      '    )',
+      '  RUBY',
+      '  puts execution["result"].inspect',
+      ...cleanup,
+    ].join('\n'),
+  };
+};
 
 export const protocols = [
   {
@@ -41,24 +81,39 @@ export const protocols = [
     title: 'Your APIs, connected.',
     description: 'Turn existing REST endpoints into discoverable tools. Load a UTCP manual or an OpenAPI document, then call your API directly.',
     tags: ['REST & OpenAPI', 'Built-in auth', 'HTTPS'],
-    note: 'Replace the URL with your manual endpoint.',
-    code: clientExample('api', 'http', ['url: "https://api.example.com/utcp"', 'http_method: "GET"']),
+    note: 'Replace the example endpoint with your weather API.',
+    ...transportExample({
+      type: 'http', name: 'api', tool: 'get_weather', description: 'Get the weather for a location.',
+      properties: { location: { type: 'string' }, units: { type: 'string', enum: ['metric', 'imperial'] } },
+      args: { location: 'Warsaw', units: 'metric' },
+      template: { url: 'https://api.example.com/weather/{location}', http_method: 'GET' },
+    }),
   },
   {
     id: 'sse', name: 'SSE', icon: 'radio', category: 'Keep the conversation flowing',
     title: 'Events as they happen.',
     description: 'Subscribe to Server-Sent Events with a familiar Ruby enumerator. Filter events and process a stream one item at a time.',
     tags: ['Server-Sent Events', 'Enumerators', 'Event filters'],
-    note: 'The manual describes the streaming endpoint.',
-    code: clientExample('events', 'sse', ['url: "https://api.example.com/utcp"'], 'client.call_tool_streaming("events.watch").each do |event|\n  puts event\nend'),
+    note: 'The example endpoint closes after the requested event limit.',
+    ...transportExample({
+      type: 'sse', name: 'events', tool: 'watch', description: 'Stream a limited number of events for a topic.', streaming: true,
+      properties: { topic: { type: 'string' }, limit: { type: 'integer', minimum: 1 } },
+      args: { topic: 'builds', limit: 3 },
+      template: { url: 'https://api.example.com/events/{topic}', reconnect: false, total_timeout: 10 },
+    }),
   },
   {
     id: 'streamable_http', name: 'Streamable HTTP', icon: 'stream', category: 'A little at a time',
     title: 'Built for the stream.',
     description: 'Work with NDJSON, JSON sequences, and binary chunks over HTTP. Consume incremental results without changing your client.',
     tags: ['NDJSON', 'JSON Sequence', 'Binary chunks'],
-    note: 'Configure limits for long-running streams.',
-    code: clientExample('stream', 'streamable_http', ['url: "https://api.example.com/utcp"', 'chunk_size: 4096'], 'client.call_tool_streaming("stream.tokens").each do |chunk|\n  puts chunk\nend'),
+    note: 'The example endpoint returns NDJSON and closes when complete.',
+    ...transportExample({
+      type: 'streamable_http', name: 'stream', tool: 'tokens', description: 'Stream generated tokens for a prompt.', streaming: true,
+      properties: { prompt: { type: 'string' }, max_tokens: { type: 'integer', minimum: 1 } },
+      args: { prompt: 'Explain UTCP', max_tokens: 32 },
+      template: { url: 'https://api.example.com/tokens', http_method: 'GET', chunk_size: 4096, total_timeout: 10 },
+    }),
   },
   {
     id: 'websocket', name: 'WebSocket', icon: 'activity', category: 'A connection that stays open',
@@ -66,47 +121,73 @@ export const protocols = [
     description: 'Keep a persistent connection to your tools. Native WebSocket support handles TLS, framing, and ping/pong for you.',
     tags: ['Persistent connections', 'WSS', 'JSON & binary'],
     note: 'Use WSS for remote connections.',
-    code: clientExample('realtime', 'websocket', ['url: "wss://api.example.com/utcp"', 'keep_alive: true', 'response_format: "json"']),
+    ...transportExample({
+      type: 'websocket', name: 'realtime', tool: 'echo', description: 'Echo a message over a persistent connection.',
+      properties: { message: { type: 'string' } }, args: { message: 'Hello from Ruby!' },
+      template: { url: 'wss://api.example.com/echo', keep_alive: true, response_format: 'json' },
+    }),
   },
   {
     id: 'grpc', name: 'gRPC', icon: 'layers', category: 'A compact, typed connection',
     title: 'Meet your RPC services.',
     description: 'Discover and invoke tools through the UTCP protobuf service. Unary calls and server streams share the same Ruby interface.',
     tags: ['Protobuf', 'Server streaming', 'UTCPService'],
-    note: 'Requires the optional grpc gem.',
-    code: clientExample('rpc', 'grpc', ['host: "api.example.com"', 'port: 443', 'use_ssl: true', 'service_name: "grpcpb.UTCPService"']),
+    note: 'Requires the grpc gem and a UTCPService server stream.',
+    ...transportExample({
+      type: 'grpc', name: 'rpc', tool: 'watch', description: 'Stream a limited number of topic updates.', streaming: true,
+      properties: { topic: { type: 'string' }, limit: { type: 'integer', minimum: 1 } },
+      args: { topic: 'builds', limit: 3 },
+      template: { host: 'api.example.com', port: 443, use_ssl: true, service_name: 'grpcpb.UTCPService' },
+    }),
   },
   {
     id: 'graphql', name: 'GraphQL', icon: 'graphql', category: 'Your schema is the starting point',
     title: 'From schema to tools.',
     description: 'Discover operations through introspection. Queries, mutations, and subscriptions become tools with their own input and output schemas.',
     tags: ['Introspection', 'Queries & mutations', 'Subscriptions'],
-    note: 'Connect to your GraphQL endpoint.',
-    code: clientExample('graph', 'graphql', ['url: "https://api.example.com/graphql"']),
+    note: 'Use a schema with an events(topic, limit) subscription.',
+    ...transportExample({
+      type: 'graphql', name: 'graph', tool: 'events', description: 'Subscribe to a limited number of topic events.', streaming: true,
+      properties: { topic: { type: 'string' }, limit: { type: 'integer', minimum: 1 } },
+      args: { topic: 'builds', limit: 3 },
+      template: { url: 'https://api.example.com/graphql', operation_type: 'subscription', operation_name: 'events', variable_types: { topic: 'String!', limit: 'Int!' }, selection_set: 'id status' },
+    }),
   },
   {
     id: 'cli', name: 'CLI', icon: 'terminal', category: 'The command line is an API, too',
     title: 'Put your scripts to work.',
     description: 'Discover manuals from a command and call local tools with safe argument interpolation. Multi-step commands can share a working directory.',
     tags: ['Local commands', 'Argument interpolation', 'Multi-step calls'],
-    note: 'Your command must print a UTCP manual.',
-    code: clientExample('shell', 'cli', ['commands: [{ command: "ruby tools.rb --utcp" }]']),
+    note: 'The name parameter is safely interpolated into the command.',
+    ...transportExample({
+      type: 'cli', name: 'shell', tool: 'greet', description: 'Print a greeting for a name.',
+      properties: { name: { type: 'string' } }, args: { name: 'Ruby' },
+      template: { commands: [{ command: "printf 'Hello, %s!\\n' UTCP_ARG_name_UTCP_END" }] },
+    }),
   },
   {
     id: 'tcp', name: 'TCP', icon: 'network', category: 'Down to the socket',
     title: 'A direct line to tools.',
     description: 'Talk to TCP services with configurable message framing. Use length prefixes, delimiters, fixed sizes, or a continuous stream.',
     tags: ['Socket transport', 'Flexible framing', 'JSON & text'],
-    note: 'The server must support UTCP discovery.',
-    code: clientExample('socket', 'tcp', ['host: "localhost"', 'port: 9000', 'framing_strategy: "length_prefix"']),
+    note: 'Connect to a JSON echo server using length-prefix framing.',
+    ...transportExample({
+      type: 'tcp', name: 'socket', tool: 'echo', description: 'Echo a JSON message over TCP.',
+      properties: { message: { type: 'string' } }, args: { message: 'Hello over TCP' },
+      template: { host: 'localhost', port: 9000, framing_strategy: 'length_prefix', request_data_format: 'json' },
+    }),
   },
   {
     id: 'udp', name: 'UDP', icon: 'send', category: 'Small messages, simple calls',
     title: 'Tools by datagram.',
     description: 'Send arguments over UDP and choose how many response datagrams to collect. Set the count to zero for fire-and-forget tools.',
     tags: ['Datagrams', 'Configurable responses', 'JSON & text'],
-    note: 'The server must support UTCP discovery.',
-    code: clientExample('datagrams', 'udp', ['host: "localhost"', 'port: 9001', 'number_of_response_datagrams: 1']),
+    note: 'Connect to a JSON echo server that returns one datagram.',
+    ...transportExample({
+      type: 'udp', name: 'datagrams', tool: 'echo', description: 'Echo a JSON message over UDP.',
+      properties: { message: { type: 'string' } }, args: { message: 'Hello over UDP' },
+      template: { host: 'localhost', port: 9001, number_of_response_datagrams: 1, request_data_format: 'json' },
+    }),
   },
   {
     id: 'webrtc', name: 'WebRTC', icon: 'peers', category: 'Make a peer-to-peer connection',
@@ -114,23 +195,34 @@ export const protocols = [
     description: 'Exchange tool calls over WebRTC DataChannels. Signaling establishes the connection, and request IDs match each call to its result.',
     tags: ['DataChannels', 'Peer connections', 'Custom adapters'],
     note: 'Default backend: Ruby 3.1+, webrtc-ruby, libdatachannel.',
-    code: clientExample('peer', 'webrtc', ['signaling_server: "https://api.example.com"', 'peer_id: "ruby-client"', 'data_channel_name: "utcp"']),
+    ...transportExample({
+      type: 'webrtc', name: 'peer', tool: 'echo', description: 'Echo a message through a peer DataChannel.',
+      properties: { message: { type: 'string' } }, args: { message: 'Hello from this peer' },
+      template: { signaling_server: 'https://api.example.com', peer_id: 'ruby-client', data_channel_name: 'utcp' },
+    }),
   },
   {
     id: 'mcp', name: 'MCP', icon: 'connect', category: 'Bring your existing tools along',
     title: 'An open door to MCP.',
     description: 'Connect to MCP servers over stdio or Streamable HTTP. Discover tools and call them alongside your other native integrations.',
     tags: ['stdio & HTTP', 'Tool discovery', 'Session isolation'],
-    note: 'Always close the client to release sessions.',
-    code: clientExample('bridge', 'mcp', ['config: { mcpServers: {\n      remote: { transport: "http",\n        url: "https://mcp.example.com/mcp" }\n    } }']),
+    note: 'Match the tool name and inputs exposed by your MCP server.',
+    ...transportExample({
+      type: 'mcp', name: 'bridge', tool: 'remote.get_weather', description: 'Call the remote MCP weather tool.',
+      properties: { location: { type: 'string' } }, args: { location: 'Warsaw' },
+      template: { name: 'bridge', config: { mcpServers: { remote: { transport: 'http', url: 'https://mcp.example.com/mcp' } } } },
+    }),
   },
   {
     id: 'text', name: 'Text', icon: 'file', category: 'Sometimes simple is perfect',
     title: 'Start with a document.',
     description: 'Load a UTCP or OpenAPI manual directly from a string. Static text tools are a handy starting point for local experiments and tests.',
     tags: ['Inline manuals', 'Static tools', 'No network required'],
-    note: 'tools.json should contain a UTCP or OpenAPI manual.',
-    code: clientExample('local', 'text', ['content: File.read("tools.json")']),
+    note: 'Text tools return static content; their input schema is empty.',
+    ...transportExample({
+      type: 'text', name: 'local', tool: 'hello', description: 'Return a static greeting without parameters.',
+      properties: {}, args: {}, template: { content: 'Hello from Ruby UTCP!' },
+    }),
   },
 ];
 

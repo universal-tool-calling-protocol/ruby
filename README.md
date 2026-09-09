@@ -62,7 +62,13 @@ for details.
 
 Search opens with the header button or Command/Ctrl+K. Arrow keys navigate
 search results and tabs; Escape closes search or mobile navigation.
-Protocol snippets describe configuration and are not executed in the browser.
+Each protocol has Manual, Ruby, and Code Mode examples. Manuals include input
+schemas and native tool templates; the calls use matching parameter values.
+Save the displayed manual under its filename before running either Ruby example.
+The Ruby client uses `call_tool` or `call_tool_streaming`; Code Mode uses
+`codemode.call_tool` or `codemode.call_tool_stream`. Text tools return static
+content and have no input parameters. Network examples need matching services.
+Protocol snippets are not executed in the browser.
 The documentation includes a self-contained Ruby text-tool example.
 The Code Mode guide includes an OpenRouter function-calling loop. Running that
 example requires `OPENROUTER_API_KEY` and a tool-capable `OPENROUTER_MODEL`;
