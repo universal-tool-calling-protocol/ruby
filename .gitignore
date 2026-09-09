@@ -1,0 +1,10 @@
+/.bundle/
+/Gemfile.lock
+/*.gem
+/vendor/bundle/
+.DS_Store
+/vendor/native/
+/.native/
+/tmp/soak/
+/node_modules/
+/dist/

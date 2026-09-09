@@ -1,0 +1,11 @@
+{
+  "name": "ruby-utcp-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ./serve.mjs",
+    "start": "node ./serve.mjs",
+    "build": "node ./build.mjs",
+    "preview": "node ./serve.mjs --dir dist"
+  }
+}
