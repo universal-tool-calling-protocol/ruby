@@ -1,19 +1,26 @@
-import { cp, mkdir } from 'node:fs/promises';
-import { relative, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { cp, mkdir, rm } from 'node:fs/promises';
+import { basename } from 'node:path';
 
-const source = fileURLToPath(new URL('./', import.meta.url));
-const destination = fileURLToPath(new URL('./dist/', import.meta.url));
-const excluded = new Set(['node_modules', 'package.json', 'README.md']);
+const source = new URL('./', import.meta.url);
+const destination = new URL('./dist/', import.meta.url);
+const publicFiles = [
+  'index.html',
+  'docs.html',
+  'styles.css',
+  'app.js',
+  'data.js',
+  'assets',
+  'examples',
+];
 
+await rm(destination, { recursive: true, force: true });
 await mkdir(destination, { recursive: true });
-await cp(source, destination, {
-  recursive: true,
-  filter(path) {
-    return !relative(source, path).split(sep).some(
-      (part) => excluded.has(part) || part.startsWith('.'),
-    );
-  },
-});
+for (const path of publicFiles) {
+  await cp(new URL(path, source), new URL(path, destination), {
+    recursive: true,
+    dereference: true,
+    filter: (path) => !basename(path).startsWith('.'),
+  });
+}
 
 console.log('Built Ruby UTCP website in dist/');

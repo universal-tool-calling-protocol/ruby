@@ -137,7 +137,7 @@ function selectProtocol(id) {
   query('#protocol-code').innerHTML = highlight(protocol.code);
   query('#copy-protocol').dataset.copy = protocol.code;
   query('#protocol-note').textContent = protocol.note;
-  query('#protocol-docs').href = '/docs.html?topic=transports#transport-' + protocol.id;
+  query('#protocol-docs').href = './docs.html?topic=transports#transport-' + protocol.id;
 }
 
 function initializeHome() {
@@ -210,7 +210,7 @@ function renderDocBlock(block) {
   if (block.type === 'callout') return '<aside class="doc-callout"><strong>' + escapeHTML(block.title) + '</strong>' + block.text + '</aside>';
   if (block.type === 'list') return '<ul class="doc-list">' + block.items.map((item) => '<li>' + item + '</li>').join('') + '</ul>';
   if (block.type === 'transports') return '<div class="doc-transports">' + protocols.map((protocol) =>
-    '<section class="doc-transport" id="transport-' + protocol.id + '"><h3>' + icon(protocol.icon) + escapeHTML(protocol.name) + '</h3><p>' + escapeHTML(protocol.description) + '</p><small>' + escapeHTML(protocol.note) + '</small><a href="/?protocol=' + protocol.id + '#protocols">View Ruby example ↗</a></section>'
+    '<section class="doc-transport" id="transport-' + protocol.id + '"><h3>' + icon(protocol.icon) + escapeHTML(protocol.name) + '</h3><p>' + escapeHTML(protocol.description) + '</p><small>' + escapeHTML(protocol.note) + '</small><a href="./?protocol=' + protocol.id + '#protocols">View Ruby example ↗</a></section>'
   ).join('') + '</div>';
   return '';
 }
@@ -222,7 +222,7 @@ function initializeDocs() {
   const current = docs.find((doc) => doc.id === requested) || docs[0];
   document.title = current.name + ' — Ruby UTCP';
   query('#docs-nav').innerHTML = docs.map((doc) =>
-    '<a class="docs-nav-link" href="/docs.html?topic=' + doc.id + '"' + (doc === current ? ' aria-current="page"' : '') + '>' + icon(doc.icon) + escapeHTML(doc.name) + '</a>'
+    '<a class="docs-nav-link" href="./docs.html?topic=' + doc.id + '"' + (doc === current ? ' aria-current="page"' : '') + '>' + icon(doc.icon) + escapeHTML(doc.name) + '</a>'
   ).join('');
   content.innerHTML = '<div class="doc-breadcrumb">DOCUMENTATION <span>/</span> ' + escapeHTML(current.name.toUpperCase()) + '</div><h1>' + escapeHTML(current.name) + '</h1><p class="doc-intro">' + escapeHTML(current.intro) + '</p>' + current.blocks.map(renderDocBlock).join('');
   queryAll('[data-code-source]', content).forEach(async (element) => {
@@ -240,7 +240,7 @@ function initializeDocs() {
     }
   });
   const index = docs.indexOf(current);
-  const pageLink = (doc, direction) => '<a href="/docs.html?topic=' + doc.id + '"><small>' + (direction === 'previous' ? '← PREVIOUS' : 'UP NEXT →') + '</small>' + escapeHTML(doc.name) + '</a>';
+  const pageLink = (doc, direction) => '<a href="./docs.html?topic=' + doc.id + '"><small>' + (direction === 'previous' ? '← PREVIOUS' : 'UP NEXT →') + '</small>' + escapeHTML(doc.name) + '</a>';
   query('#docs-pagination').innerHTML = (index > 0 ? pageLink(docs[index - 1], 'previous') : '') + (index < docs.length - 1 ? pageLink(docs[index + 1], 'next') : '');
   if (location.hash) requestAnimationFrame(() => document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView());
 }
@@ -254,8 +254,8 @@ function initializeSearch() {
   const input = query('input', dialog);
   const results = query('#search-results', dialog);
   const entries = [
-    ...docs.map((doc) => ({ ...doc, url: '/docs.html?topic=' + doc.id })),
-    ...protocols.map((protocol) => ({ ...protocol, keywords: protocol.id + ' protocol transport ' + protocol.tags.join(' '), description: protocol.title, url: '/docs.html?topic=transports#transport-' + protocol.id })),
+    ...docs.map((doc) => ({ ...doc, url: './docs.html?topic=' + doc.id })),
+    ...protocols.map((protocol) => ({ ...protocol, keywords: protocol.id + ' protocol transport ' + protocol.tags.join(' '), description: protocol.title, url: './docs.html?topic=transports#transport-' + protocol.id })),
   ];
   function renderResults() {
     const words = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);

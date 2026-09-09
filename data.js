@@ -203,7 +203,7 @@ export const docs = [
       { type: 'code', label: 'search.rb · after client creation', code: 'tools = client.search_tools(\n  "weather forecast",\n  limit: 5,\n  any_of_tags_required: ["weather"]\n)\n\nputs tools.map(&:name)' },
       { type: 'heading', title: 'Already have an OpenAPI document?' },
       { type: 'paragraph', text: 'HTTP, text, and file manuals can also contain OpenAPI 3 or Swagger 2 documents. Ruby UTCP converts their operations into tools automatically, so your existing API description can be the starting point.' },
-      { type: 'callout', title: 'Discovery respects protocol boundaries', text: 'By default, a manual can only register tools that use its own protocol. Mixed-protocol manuals must opt in with <code>allowed_communication_protocols</code>. See <a href="/docs.html?topic=security">security & limits</a>.' },
+      { type: 'callout', title: 'Discovery respects protocol boundaries', text: 'By default, a manual can only register tools that use its own protocol. Mixed-protocol manuals must opt in with <code>allowed_communication_protocols</code>. See <a href="./docs.html?topic=security">security & limits</a>.' },
     ],
   },
   {
@@ -255,7 +255,7 @@ export const docs = [
       { type: 'code', label: 'response_limits.rb', code: 'require "utcp"\n\ntemplate = UTCP::HttpCallTemplate.new(\n  url: "https://api.example.com/utcp",\n  max_response_bytes: 2 * 1024 * 1024,\n  total_timeout: 30\n)' },
       { type: 'heading', title: 'Secure remote connections' },
       { type: 'list', items: ['Remote HTTP endpoints require HTTPS. Plain HTTP is accepted for loopback development hosts.', 'Remote WebSocket connections use WSS. Plain WS is restricted to literal loopback hosts.', 'Redirect targets are validated again; credentials are stripped on cross-origin redirects.', 'SSE and Streamable HTTP also bound individual event size and the number of emitted items.'] },
-      { type: 'callout', title: 'Choose limits for your workload', text: 'A network response budget does not replace endpoint authentication or application authorization. For streaming timeouts, see <a href="/docs.html?topic=streaming">working with streams</a>.' },
+      { type: 'callout', title: 'Choose limits for your workload', text: 'A network response budget does not replace endpoint authentication or application authorization. For streaming timeouts, see <a href="./docs.html?topic=streaming">working with streams</a>.' },
     ],
   },
   {
@@ -306,8 +306,8 @@ export const docs = [
       { type: 'code', label: 'Terminal', code: 'gem install ruby-utcp\nexport OPENROUTER_API_KEY="your-openrouter-key"\nexport OPENROUTER_MODEL="your-selected-model-id"\nruby openrouter_code_mode.rb' },
       { type: 'paragraph', text: 'The model and key above are placeholders. Running the script sends prompts, tool descriptions, and results to OpenRouter and the selected provider, and uses your account’s API credits. Keep the API key in the server-side environment.' },
       { type: 'heading', title: '2. Run the complete example' },
-      { type: 'paragraph', text: '<a href="/examples/openrouter_code_mode.rb" download>Download openrouter_code_mode.rb</a>, or copy the source below. It registers <code>demo.greeting</code>, prompts for Ruby Code Mode code, prints and executes the generated program, returns its result to the model, and closes the client when finished.' },
-      { type: 'source', label: 'openrouter_code_mode.rb', src: '/examples/openrouter_code_mode.rb' },
+      { type: 'paragraph', text: '<a href="./examples/openrouter_code_mode.rb" download>Download openrouter_code_mode.rb</a>, or copy the source below. It registers <code>demo.greeting</code>, prompts for Ruby Code Mode code, prints and executes the generated program, returns its result to the model, and closes the client when finished.' },
+      { type: 'source', label: 'openrouter_code_mode.rb', src: './examples/openrouter_code_mode.rb' },
       { type: 'heading', title: '3. Bring your own tools' },
       { type: 'paragraph', text: 'Replace the local manual in <code>build_client</code> with your own HTTP manual configuration. Change the prompt to match the tools you register. The OpenRouter conversation loop stays the same.' },
       { type: 'code', label: 'Replace the demo client configuration', code: 'UTCP::CodeModeUtcpClient.create(config: {\n  manual_call_templates: [{\n    name: "api",\n    call_template_type: "http",\n    url: ENV.fetch("UTCP_MANUAL_URL")\n  }]\n})' },

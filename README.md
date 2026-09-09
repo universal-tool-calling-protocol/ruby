@@ -8,22 +8,47 @@ The supplied logo is used unchanged; CSS handles its presentation.
 From the repository root, with Node.js 20 or newer:
 
 ```sh
-npm --prefix website run dev
+npm run dev
 ```
 
 Open http://127.0.0.1:5173. No package installation is required.
-Use `npm --prefix website run dev -- --port 5174` to choose another port.
+Use `npm run dev -- --port 5174` to choose another port.
 
 ## Build and preview
 
 ```sh
-npm --prefix website run build
-npm --prefix website run preview
+npm run check
+npm run build
+npm run preview
 ```
 
-The build copies the public site to the root `dist/` directory. Deploy its
-contents to the root of a static host. Paths are relative to the site root.
+The build recreates this repository's `dist/` directory with only the public
+pages, browser scripts, stylesheet, assets, and downloadable examples. Deploy
+its contents to a static host. Links are relative, so the site works both at
+a domain root and under a path such as `/ruby-utcp-website/`.
 The Node server is a local development and preview utility.
+
+## CI/CD and GitHub Pages
+
+The [website workflow](.github/workflows/pages.yml) checks JavaScript syntax and
+builds the site with Node.js 24 on pull requests targeting `main` and on pushes
+to `main`. A successful push to `main` publishes `dist/` to GitHub Pages. You can
+also run **Website CI and deployment** manually from the Actions tab with `main`
+selected. Pull requests and manual runs on other branches only check and build.
+
+To enable publishing:
+
+1. Open the repository's [Pages settings](https://github.com/universal-tool-calling-protocol/ruby-utcp-website/settings/pages).
+2. Under **Build and deployment → Source**, select **GitHub Actions**.
+3. Push this workflow to `main`, or run it manually after it is on `main`.
+
+After a successful deployment, the site is available at
+[universal-tool-calling-protocol.github.io/ruby-utcp-website/](https://universal-tool-calling-protocol.github.io/ruby-utcp-website/).
+The deployment URL also appears in the workflow's `github-pages` environment.
+Publishing uses GitHub's built-in token; no additional deployment secrets or
+package installation are required. See GitHub's
+[custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+for details.
 
 ## Content and interaction
 
